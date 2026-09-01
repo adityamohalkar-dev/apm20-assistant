@@ -43,6 +43,7 @@ jobs:
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
           GITHUB_PAT: ${{ secrets.GH_PAT }}
+          WAKATIME_API_KEY: ${{ secrets.WAKATIME_API_KEY }}
         run: python notify.py ${{ steps.mode.outputs.mode }}
 
       - name: Save streak state back to repo
