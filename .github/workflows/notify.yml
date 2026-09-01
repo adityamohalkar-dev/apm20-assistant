@@ -8,6 +8,9 @@ on:
     - cron: "25 16 * * *"
   workflow_dispatch: {}   # lets you trigger it manually from the Actions tab to test
 
+permissions:
+  contents: write   # needed so the workflow can commit state.json back
+
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -39,4 +42,12 @@ jobs:
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
           CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
         run: python notify.py ${{ steps.mode.outputs.mode }}
+
+      - name: Save streak state back to repo
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update streak state [skip ci]"
+          file_pattern: state.json
+

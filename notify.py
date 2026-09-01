@@ -21,8 +21,10 @@ from zoneinfo import ZoneInfo
 import requests
 
 import roadmap
+import github_tracker
 
 IST = ZoneInfo("Asia/Kolkata")
+GITHUB_USERNAME = "adityamohalkar-dev"
 
 
 # ---------------------------------------------------------------
@@ -34,6 +36,28 @@ def build_message(mode: str) -> str:
     weekday = now.strftime("%A")
 
     lines = [f"APM20 // {weekday}, {now.strftime('%d %b %Y')} // {mode.upper()}", ""]
+
+    # --- REAL proof-of-work check (not self-reported) ---
+    token = os.environ.get("GITHUB_PAT")
+    activity = github_tracker.get_today_activity(GITHUB_USERNAME, token)
+    state = None
+    if mode == "evening":
+        state = github_tracker.update_streak(activity["ok"] and activity["total_commits_today"] > 0)
+
+    if activity["ok"]:
+        if activity["total_commits_today"] > 0:
+            repos = ", ".join(activity["repos_with_commits"])
+            lines.append(
+                f"PROOF-OF-WORK (verified): {activity['total_commits_today']} commit(s) today in [{repos}]"
+            )
+        else:
+            lines.append("PROOF-OF-WORK (verified): 0 commits today so far")
+        if state:
+            lines.append(f"Streak: {state['current_streak']} day(s) (best: {state['longest_streak']})")
+        lines.append("")
+    elif token:
+        lines.append(f"[proof-of-work check failed: {activity['error']}]")
+        lines.append("")
 
     sprint_day = roadmap.SPRINT_8DAY.get(today_str)
 
