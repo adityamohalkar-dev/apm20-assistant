@@ -13,13 +13,13 @@ GITHUB_TOKEN that Actions provides — that one can't see your other repos.
 import json
 import os
 from datetime import datetime, timedelta
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests
 
+import state_store
+
 IST = ZoneInfo("Asia/Kolkata")
-STATE_FILE = Path(__file__).parent / "state.json"
 API_BASE = "https://api.github.com"
 
 
@@ -32,16 +32,11 @@ def _headers(token: str) -> dict:
 
 
 def _load_state() -> dict:
-    if STATE_FILE.exists():
-        try:
-            return json.loads(STATE_FILE.read_text())
-        except Exception:
-            pass
-    return {"last_commit_date": None, "current_streak": 0, "longest_streak": 0}
+    return state_store.load_state()
 
 
 def _save_state(state: dict) -> None:
-    STATE_FILE.write_text(json.dumps(state, indent=2))
+    state_store.save_state(state)
 
 
 def get_today_activity(username: str, token: str) -> dict:

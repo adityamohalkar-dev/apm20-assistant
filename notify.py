@@ -23,6 +23,7 @@ import requests
 import roadmap
 import github_tracker
 import wakatime_tracker
+import telegram_inbox
 
 IST = ZoneInfo("Asia/Kolkata")
 GITHUB_USERNAME = "adityamohalkar-dev"
@@ -186,6 +187,17 @@ def send_whatsapp(message: str) -> None:
 # ---------------------------------------------------------------
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "morning"  # "morning" or "evening"
+
+    # --- Check for /done, /skip, /log commands sent since last run ---
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    inbox = telegram_inbox.process_new_messages(token)
+    if inbox["ok"] and inbox["processed"]:
+        print(f"[inbox] processed {len(inbox['processed'])} command(s): {inbox['processed']}")
+        for reply in inbox["reply_texts"]:
+            send_telegram(reply)
+    elif inbox["error"]:
+        print(f"[inbox] check failed: {inbox['error']}")
+
     message = build_message(mode)
     print(message)
     print("-" * 40)
