@@ -43,6 +43,11 @@ def build_message(mode: str) -> str:
         for t in sprint_day["tasks"]:
             lines.append(f"  - {t}")
         lines.append(f"Deliverable: {sprint_day['deliverable']}")
+        if sprint_day.get("resources"):
+            lines.append("")
+            lines.append("Resources:")
+            for r in sprint_day["resources"]:
+                lines.append(f"  - {r}")
     elif weekday == "Sunday":
         lines.append("SUNDAY DEEP WORK SPRINT (10-12 hrs)")
         for b in roadmap.SUNDAY_BLOCK:
@@ -52,10 +57,18 @@ def build_message(mode: str) -> str:
             lines.append("SUNDAY SELF-AUDIT — answer honestly:")
             for i, q in enumerate(roadmap.SUNDAY_REVIEW_CHECKLIST, 1):
                 lines.append(f"  {i}. {q}")
+        lines.append("")
+        lines.append("Resources:")
+        for r in roadmap.GENERAL_RESOURCES:
+            lines.append(f"  - {r}")
     else:
         lines.append("WEEKDAY OPERATING BLOCK (5:30-9:30 PM)")
         for b in roadmap.WEEKDAY_BLOCK:
             lines.append(f"  - {b}")
+        lines.append("")
+        lines.append("Resources:")
+        for r in roadmap.GENERAL_RESOURCES:
+            lines.append(f"  - {r}")
 
     if mode == "evening" and weekday != "Sunday":
         lines.append("")
