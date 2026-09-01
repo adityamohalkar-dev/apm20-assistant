@@ -22,6 +22,7 @@ import requests
 
 import roadmap
 import github_tracker
+import wakatime_tracker
 
 IST = ZoneInfo("Asia/Kolkata")
 GITHUB_USERNAME = "adityamohalkar-dev"
@@ -57,6 +58,19 @@ def build_message(mode: str) -> str:
         lines.append("")
     elif token:
         lines.append(f"[proof-of-work check failed: {activity['error']}]")
+        lines.append("")
+
+    # --- REAL coding time check (not self-reported) ---
+    waka_key = os.environ.get("WAKATIME_API_KEY")
+    coding = wakatime_tracker.get_today_coding_time(waka_key)
+    if coding["ok"]:
+        lines.append(f"CODING TIME (verified): {coding['human_readable']} today")
+        if coding["languages"]:
+            langs = ", ".join(f"{l['name']} ({l['text']})" for l in coding["languages"])
+            lines.append(f"  Top languages: {langs}")
+        lines.append("")
+    elif waka_key:
+        lines.append(f"[coding time check failed: {coding['error']}]")
         lines.append("")
 
     sprint_day = roadmap.SPRINT_8DAY.get(today_str)
