@@ -24,6 +24,8 @@ import roadmap
 import github_tracker
 import wakatime_tracker
 import telegram_inbox
+import groq_brain
+import state_store
 
 IST = ZoneInfo("Asia/Kolkata")
 GITHUB_USERNAME = "adityamohalkar-dev"
@@ -32,12 +34,23 @@ GITHUB_USERNAME = "adityamohalkar-dev"
 # ---------------------------------------------------------------
 # 1) BUILD TODAY'S MESSAGE
 # ---------------------------------------------------------------
-def build_message(mode: str) -> str:
+def build_message(mode: str) -> tuple:
+    """Returns (message_text, context_dict). context_dict is used by groq_brain
+    for the evening AI review — it only ever contains real, verified data."""
     now = datetime.now(IST)
     today_str = now.strftime("%Y-%m-%d")
     weekday = now.strftime("%A")
 
     lines = [f"APM20 // {weekday}, {now.strftime('%d %b %Y')} // {mode.upper()}", ""]
+    context = {
+        "commits_today": 0,
+        "repos": [],
+        "coding_time": "0 mins",
+        "streak": 0,
+        "best_streak": 0,
+        "sprint_focus": None,
+        "activity_log_today": [],
+    }
 
     # --- REAL proof-of-work check (not self-reported) ---
     token = os.environ.get("GITHUB_PAT")
@@ -47,6 +60,8 @@ def build_message(mode: str) -> str:
         state = github_tracker.update_streak(activity["ok"] and activity["total_commits_today"] > 0)
 
     if activity["ok"]:
+        context["commits_today"] = activity["total_commits_today"]
+        context["repos"] = activity["repos_with_commits"]
         if activity["total_commits_today"] > 0:
             repos = ", ".join(activity["repos_with_commits"])
             lines.append(
@@ -56,6 +71,8 @@ def build_message(mode: str) -> str:
             lines.append("PROOF-OF-WORK (verified): 0 commits today so far")
         if state:
             lines.append(f"Streak: {state['current_streak']} day(s) (best: {state['longest_streak']})")
+            context["streak"] = state["current_streak"]
+            context["best_streak"] = state["longest_streak"]
         lines.append("")
     elif token:
         lines.append(f"[proof-of-work check failed: {activity['error']}]")
@@ -65,6 +82,7 @@ def build_message(mode: str) -> str:
     waka_key = os.environ.get("WAKATIME_API_KEY")
     coding = wakatime_tracker.get_today_coding_time(waka_key)
     if coding["ok"]:
+        context["coding_time"] = coding["human_readable"]
         lines.append(f"CODING TIME (verified): {coding['human_readable']} today")
         if coding["languages"]:
             langs = ", ".join(f"{l['name']} ({l['text']})" for l in coding["languages"])
@@ -77,6 +95,7 @@ def build_message(mode: str) -> str:
     sprint_day = roadmap.SPRINT_8DAY.get(today_str)
 
     if sprint_day:
+        context["sprint_focus"] = sprint_day["focus"]
         lines.append(f"SPRINT DAY — {sprint_day['focus']}")
         lines.append("Tasks:")
         for t in sprint_day["tasks"]:
@@ -88,6 +107,7 @@ def build_message(mode: str) -> str:
             for r in sprint_day["resources"]:
                 lines.append(f"  - {r}")
     elif weekday == "Sunday":
+        context["sprint_focus"] = "Sunday Deep Work Sprint"
         lines.append("SUNDAY DEEP WORK SPRINT (10-12 hrs)")
         for b in roadmap.SUNDAY_BLOCK:
             lines.append(f"  - {b}")
@@ -101,6 +121,7 @@ def build_message(mode: str) -> str:
         for r in roadmap.GENERAL_RESOURCES:
             lines.append(f"  - {r}")
     else:
+        context["sprint_focus"] = "Weekday Operating Block"
         lines.append("WEEKDAY OPERATING BLOCK (5:30-9:30 PM)")
         for b in roadmap.WEEKDAY_BLOCK:
             lines.append(f"  - {b}")
@@ -116,7 +137,13 @@ def build_message(mode: str) -> str:
     lines.append("")
     lines.append(f"Rule reminder: {roadmap.CORE_RULES[now.day % len(roadmap.CORE_RULES)]}")
 
-    return "\n".join(lines)
+    # Pull today's self-logged activity (from /done, /skip, /log) for the AI review
+    full_state = state_store.load_state()
+    context["activity_log_today"] = [
+        e for e in full_state.get("activity_log", []) if e.get("date") == today_str
+    ]
+
+    return "\n".join(lines), context
 
 
 # ---------------------------------------------------------------
@@ -198,7 +225,17 @@ def main():
     elif inbox["error"]:
         print(f"[inbox] check failed: {inbox['error']}")
 
-    message = build_message(mode)
+    message, context = build_message(mode)
+
+    if mode == "evening":
+        review = groq_brain.generate_reflection(context)
+        if review["ok"]:
+            message += f"\n\nAI REVIEW:\n{review['text']}"
+            print(f"[ai review] generated")
+        elif review["error"] and os.environ.get("GROQ_API_KEY"):
+            print(f"[ai review] FAILED: {review['error']}")
+        # if GROQ_API_KEY simply isn't set, stay silent — same pattern as every other channel
+
     print(message)
     print("-" * 40)
 
