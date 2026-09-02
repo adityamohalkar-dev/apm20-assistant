@@ -1,12 +1,12 @@
 name: APM20 Assistant Notify
 
 on:
-  schedule:
-    # 05:30 UTC = 11:00 AM IST — morning brief
-    - cron: "30 5 * * *"
-    # 16:25 UTC = 9:55 PM IST — evening check / Sunday audit
-    - cron: "25 16 * * *"
-  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab to test
+  # No GitHub-native "schedule:" trigger — GitHub's free-tier cron can lag
+  # by hours on low-activity repos (you saw this: a 21:55 IST run landing
+  # at 00:56 the next day). cron-job.org now triggers this workflow at
+  # exact times via workflow_dispatch instead — see the "APM20 trigger"
+  # job in your cron-job.org account.
+  workflow_dispatch: {}   # fired externally by cron-job.org, or manually from the Actions tab to test
 
 permissions:
   contents: write   # needed so the workflow can commit state.json back

@@ -32,7 +32,7 @@ SPRINT_8DAY = {
         ],
         "deliverable": "CLI cheat-sheet documented",
         "resources": [
-            "CLI basics (freeCodeCamp): https://www.youtube.com/watch?v=zPOu2BAI8SM",
+            "CLI basics (freeCodeCamp — verified): https://www.youtube.com/watch?v=mABpAI-pCw0",
             "Git branching (interactive, learn by doing): https://learngitbranching.js.org/",
             "Atlassian Git branching guide: https://www.atlassian.com/git/tutorials/using-branches",
             "Git rebase/squash guide: https://www.atlassian.com/git/tutorials/rewriting-history",
@@ -46,8 +46,8 @@ SPRINT_8DAY = {
         "deliverable": "15 logic exercises solved (FizzBuzz, String Reversal, etc.)",
         "resources": [
             "CS50P full course (Harvard, free): https://cs50.harvard.edu/python/2022/",
-            "CS50P Week 0 lecture: https://www.youtube.com/watch?v=qCFN2VC7z2M",
-            "Bro Code full Python course: https://www.youtube.com/watch?v=XKHEtdqhLK8",
+            "CS50P full playlist — start at Lecture 0 (verified): https://www.youtube.com/playlist?list=PLhQjrBD2T3817j24-GogXmWqO5Q5vYy0V",
+            "Bro Code Python full course playlist (verified): https://www.youtube.com/playlist?list=PL6zix6brJZNFp_nAtoPGEps1YAZO10G5S",
             "Practice problems: https://www.hackerrank.com/domains/python",
         ],
     },
@@ -73,7 +73,7 @@ SPRINT_8DAY = {
         ],
         "deliverable": "Modular class-based script, no errors",
         "resources": [
-            "Corey Schafer OOP playlist: https://www.youtube.com/playlist?list=PL-osiE80TeTsqhIuOqKhwlXsIBIdSeYtc",
+            "Corey Schafer OOP series, part 1 (verified): https://youtu.be/ZDa-Z5JzLYM",
             "CS50P Week 6 (OOP): https://cs50.harvard.edu/python/2022/weeks/6/",
             "Real Python — OOP intro: https://realpython.com/python3-object-oriented-programming/",
             "Real Python — try/except: https://realpython.com/python-exceptions/",
