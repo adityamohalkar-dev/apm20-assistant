@@ -1,0 +1,44 @@
+name: APM20 Assistant Notify
+
+on:
+  # Single daily run at 7:00 AM IST, triggered externally by cron-job.org
+  # (the "APM20 trigger" job) via workflow_dispatch. No GitHub-native
+  # "schedule:" trigger — GitHub's free-tier cron can lag by hours on
+  # low-activity repos.
+  workflow_dispatch: {}   # fired externally by cron-job.org, or manually from the Actions tab to test
+
+permissions:
+  contents: write   # needed so the workflow can commit state.json back
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Send notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
+          WAKATIME_API_KEY: ${{ secrets.WAKATIME_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python notify.py
+
+      - name: Save streak state back to repo
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update streak state [skip ci]"
+          file_pattern: state.json
+

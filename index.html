@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APM20 — Proof of Work</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #131313;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #9fff9f;
+    --accent-dim: #4d8f4d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    padding: 24px 16px 60px 16px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  header { margin-bottom: 28px; }
+  header h1 {
+    font-size: 22px;
+    margin: 0 0 4px 0;
+    letter-spacing: 0.5px;
+  }
+  header p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 13px;
+  }
+  header a { color: var(--accent); text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .card .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .card .value {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--accent);
+  }
+  .card .sub {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 28px 0 10px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .log-entry {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .log-entry .meta {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+  .log-entry.done { border-left-color: var(--accent); }
+  .log-entry.skip { border-left-color: #ff9f9f; }
+  .log-entry.note { border-left-color: #9fcfff; }
+
+  .empty {
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+    padding: 20px 0;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .loading { color: var(--muted); padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>APM20 — Proof of Work Dashboard</h1>
+    <p>Live data, not self-reported. Source: <a href="https://github.com/adityamohalkar-dev/apm20-assistant" target="_blank">apm20-assistant</a></p>
+  </header>
+
+  <div id="content" class="loading">Loading live data…</div>
+
+  <footer>Auto-generated from state.json — updates whenever the assistant runs.</footer>
+</div>
+
+<script>
+const STATE_URL = "https://raw.githubusercontent.com/adityamohalkar-dev/apm20-assistant/main/state.json";
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderLogEntry(entry) {
+  const typeLabel = { done: "DONE", skip: "SKIPPED", note: "NOTE" }[entry.type] || entry.type.toUpperCase();
+  return `
+    <div class="log-entry ${escapeHtml(entry.type)}">
+      <div class="meta">${escapeHtml(entry.date)} ${escapeHtml(entry.time || '')} — ${typeLabel}</div>
+      <div>${entry.detail ? escapeHtml(entry.detail) : '<em>(no note)</em>'}</div>
+    </div>
+  `;
+}
+
+fetch(STATE_URL, { cache: "no-store" })
+  .then(res => {
+    if (!res.ok) throw new Error("state.json not found (HTTP " + res.status + ")");
+    return res.json();
+  })
+  .then(state => {
+    const streak = state.current_streak ?? 0;
+    const best = state.longest_streak ?? 0;
+    const lastDate = state.last_commit_date || "never";
+    const taskIndex = state.current_task_index ?? 0;
+    const repeatCount = state.task_repeat_count ?? 0;
+    const startedAt = state.task_started_at || "—";
+    const log = (state.activity_log || []).slice().reverse();
+
+    let html = `
+      <div class="grid">
+        <div class="card">
+          <div class="label">Current Streak</div>
+          <div class="value">${streak}</div>
+          <div class="sub">day${streak === 1 ? '' : 's'}</div>
+        </div>
+        <div class="card">
+          <div class="label">Best Streak</div>
+          <div class="value">${best}</div>
+          <div class="sub">day${best === 1 ? '' : 's'}</div>
+        </div>
+        <div class="card">
+          <div class="label">Last Commit</div>
+          <div class="value" style="font-size:16px;">${escapeHtml(lastDate)}</div>
+        </div>
+      </div>
+
+      <div class="section-title">Current Task Set (#${taskIndex + 1})</div>
+      <div class="log-entry" style="border-left-color:${repeatCount > 1 ? '#ff9f9f' : '#9fff9f'}">
+        <div class="meta">Started ${escapeHtml(startedAt)}${repeatCount > 1 ? ` — pending ${repeatCount} days, no push yet` : ' — in progress'}</div>
+        <div>Task index ${taskIndex} — see roadmap.py in the repo for full task details, or check your Telegram for today's list.</div>
+      </div>
+
+      <div class="section-title">Recent Activity Log</div>
+    `;
+
+    if (log.length === 0) {
+      html += `<div class="empty">No logged notes yet — send /log or /skip to the bot to start building this.</div>`;
+    } else {
+      html += log.slice(0, 20).map(renderLogEntry).join("");
+    }
+
+    document.getElementById("content").innerHTML = html;
+  })
+  .catch(err => {
+    document.getElementById("content").innerHTML =
+      `<div class="empty">Couldn't load live data: ${escapeHtml(err.message)}<br>(Make sure the repo is public and state.json exists on the main branch.)</div>`;
+  });
+</script>
+</body>
+</html>

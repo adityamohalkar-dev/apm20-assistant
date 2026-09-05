@@ -18,6 +18,9 @@ DEFAULTS = {
     "longest_streak": 0,
     "telegram_offset": 0,
     "activity_log": [],
+    "current_task_index": 0,       # pointer into roadmap.TASK_QUEUE
+    "task_started_at": None,       # ISO date the current task set was first shown
+    "task_repeat_count": 0,        # how many days in a row this same task set has repeated
 }
 
 

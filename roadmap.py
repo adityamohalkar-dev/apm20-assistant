@@ -1,160 +1,90 @@
 """
 roadmap.py
 ==========
-Single source of truth for APM20 Assistant.
-Edit THIS file whenever your plan changes — notify.py just reads it.
-Dates use ISO format "YYYY-MM-DD".
+Rolling task queue. There are NO fixed dates here anymore — the bot tracks
+which task set you're currently on (state.json: current_task_index) and
+only advances to the next one once a real git push is detected for the
+current one. If no push lands by the next 7 AM check, the SAME task set
+is shown again.
+
+Every task set targets SKILL_REPO — push your work there to mark it done.
+Budget: 2 hours/day for skill-building, always. Keep each task set doable
+inside that window; don't pad it with more than 1-2 real resources.
 """
 
-# ---------------------------------------------------------------
-# 1) THE 8-DAY PRE-COLLEGE SPRINT (Aug 31 - Sep 7, 2026)
-# ---------------------------------------------------------------
-SPRINT_8DAY = {
-    "2026-08-31": {
-        "focus": "Dev Environment & Git Setup",
-        "tasks": [
-            "Install Python 3.11+, VS Code, Git, WSL2/Linux terminal",
-            "Set up SSH keys for GitHub",
-        ],
-        "deliverable": "Terminal working; `hello-world` repo pushed to GitHub",
-        "resources": [
-            "Python install: https://www.python.org/downloads/",
-            "VS Code: https://code.visualstudio.com/download",
-            "Git install: https://git-scm.com/downloads",
-            "GitHub SSH key guide: https://docs.github.com/en/authentication/connecting-to-github-with-ssh",
-        ],
-    },
-    "2026-09-01": {
-        "focus": "Command Line & Git Workflows",
-        "tasks": [
-            "Master CLI commands (cd, ls, mkdir, rm)",
-            "Learn branching, commit squashing, remote syncing",
-        ],
-        "deliverable": "CLI cheat-sheet documented",
-        "resources": [
-            "CLI basics (freeCodeCamp — verified): https://www.youtube.com/watch?v=mABpAI-pCw0",
-            "Git branching (interactive, learn by doing): https://learngitbranching.js.org/",
-            "Atlassian Git branching guide: https://www.atlassian.com/git/tutorials/using-branches",
-            "Git rebase/squash guide: https://www.atlassian.com/git/tutorials/rewriting-history",
-        ],
-    },
-    "2026-09-02": {
-        "focus": "Python Logic & Control Flow",
-        "tasks": [
-            "CS50P (Week 0-1) or Bro Code — variables, if/else, loops",
-        ],
-        "deliverable": "15 logic exercises solved (FizzBuzz, String Reversal, etc.)",
-        "resources": [
-            "CS50P full course (Harvard, free): https://cs50.harvard.edu/python/2022/",
-            "CS50P full playlist — start at Lecture 0 (verified): https://www.youtube.com/playlist?list=PLhQjrBD2T3817j24-GogXmWqO5Q5vYy0V",
-            "Bro Code Python full course playlist (verified): https://www.youtube.com/playlist?list=PL6zix6brJZNFp_nAtoPGEps1YAZO10G5S",
-            "Practice problems: https://www.hackerrank.com/domains/python",
-        ],
-    },
-    "2026-09-03": {
-        "focus": "Functions, Modules & File I/O",
-        "tasks": [
-            "Functional scope, *args/**kwargs, modules",
-            "Reading/writing files (csv, json)",
-        ],
-        "deliverable": "File parsing script pushed via Git branch",
-        "resources": [
-            "CS50P Week 3 (Functions): https://cs50.harvard.edu/python/2022/weeks/3/",
-            "Real Python — *args/**kwargs: https://realpython.com/python-kwargs-and-args/",
-            "Real Python — Reading/Writing files: https://realpython.com/read-write-files-python/",
-            "Python csv/json docs: https://docs.python.org/3/library/csv.html",
-        ],
-    },
-    "2026-09-04": {
-        "focus": "Object-Oriented Python (OOP)",
-        "tasks": [
-            "Classes, Objects, Inheritance, Methods, Encapsulation",
-            "Error handling (try/except)",
-        ],
-        "deliverable": "Modular class-based script, no errors",
-        "resources": [
-            "Corey Schafer OOP series, part 1 (verified): https://youtu.be/ZDa-Z5JzLYM",
-            "CS50P Week 6 (OOP): https://cs50.harvard.edu/python/2022/weeks/6/",
-            "Real Python — OOP intro: https://realpython.com/python3-object-oriented-programming/",
-            "Real Python — try/except: https://realpython.com/python-exceptions/",
-        ],
-    },
-    "2026-09-05": {
-        "focus": "Building Project #1 (CLI Tool)",
-        "tasks": [
-            "Build a full CLI tool (Log Analyzer / Grade Calculator)",
-        ],
-        "deliverable": "Core project architecture + working code",
-        "resources": [
-            "Python argparse tutorial (build real CLIs): https://docs.python.org/3/howto/argparse.html",
-            "Example CLI tool projects: https://github.com/topics/cli-tool?l=python",
-            "CS50P Week 7 (File I/O project ideas): https://cs50.harvard.edu/python/2022/weeks/7/",
-        ],
-    },
-    "2026-09-06": {
-        "focus": "Documentation & Code Quality",
-        "tasks": [
-            "Format with Black/Flake8",
-            "Write a clean README.md",
-        ],
-        "deliverable": "First documented CLI project published on GitHub",
-        "resources": [
-            "Black formatter docs: https://black.readthedocs.io/en/stable/",
-            "Flake8 docs: https://flake8.pycqa.org/en/latest/",
-            "How to write a good README: https://www.makeareadme.com/",
-            "Awesome README examples: https://github.com/matiassingers/awesome-readme",
-        ],
-    },
-    "2026-09-07": {
-        "focus": "Linear Algebra in Python",
-        "tasks": [
-            "3Blue1Brown — Essence of Linear Algebra",
-            "Pure Python vector/matrix multiplication",
-        ],
-        "deliverable": "10 pure-Python math scripts committed",
-        "resources": [
-            "3Blue1Brown — Essence of Linear Algebra (full playlist): https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
-            "Khan Academy Linear Algebra: https://www.khanacademy.org/math/linear-algebra",
-        ],
-    },
-}
+SKILL_REPO = "hello-world"  # push your daily work here to auto-complete a task set
 
-SPRINT_END_DATE = "2026-09-07"
-
-# ---------------------------------------------------------------
-# 2) WEEKLY OPERATING OS (from Sep 8 onward)
-# ---------------------------------------------------------------
-WEEKDAY_BLOCK = [
-    "Hour 1 (5:30-6:30 PM): College academics / exam prep",
-    "Hours 2-3 (6:30-8:30 PM): Deep skill building (Python / C++ / Math)",
-    "Hour 4 (8:30-9:30 PM): LeetCode / DSA / logic puzzles",
+TASK_QUEUE = [
+    {
+        "title": "Windows Terminal Basics (CMD + PowerShell)",
+        "tasks": [
+            "Watch the CMD basics video below",
+            "Watch the PowerShell basics video below",
+            "Practice 10 commands yourself: cd, dir, mkdir, del, copy, cls, echo, exit, ls (PowerShell), Get-Location (PowerShell)",
+            "Create a file commands.txt listing the 10 commands + what each does, in one sentence",
+            "git push commands.txt to hello-world",
+        ],
+        "resources": [
+            "CMD basics (direct video): https://www.youtube.com/watch?v=QBWX_4ho8D4",
+            "PowerShell basics (direct video, ~30 min): https://www.youtube.com/watch?v=GyvEMcMh3rc",
+        ],
+    },
+    {
+        "title": "Python Fundamentals — Variables & Control Flow",
+        "tasks": [
+            "Watch CS50P Lecture 0 (Functions, Variables) from the playlist below",
+            "Solve 5 exercises: FizzBuzz, String Reversal, even/odd checker, simple calculator, temperature converter",
+            "Save all 5 as separate .py files in a new folder called python-basics",
+            "git push the python-basics folder to hello-world",
+        ],
+        "resources": [
+            "CS50P Lecture 0 (Harvard, direct playlist — watch episode 0 only): https://www.youtube.com/playlist?list=PLhQjrBD2T3817j24-GogXmWqO5Q5vYy0V",
+        ],
+    },
+    {
+        "title": "Functions, Modules & File I/O",
+        "tasks": [
+            "Read the Real Python article on *args/**kwargs (link below)",
+            "Write 3 functions using *args and **kwargs that actually do something (not toy examples — e.g. a function that sums any number of inputs)",
+            "Write one script that reads a .csv file and prints each row",
+            "git push both to hello-world",
+        ],
+        "resources": [
+            "Real Python — *args/**kwargs (direct article): https://realpython.com/python-kwargs-and-args/",
+        ],
+    },
+    {
+        "title": "Object-Oriented Python (OOP)",
+        "tasks": [
+            "Watch Corey Schafer's OOP video below (Classes and Instances)",
+            "Build one class with at least 2 methods and 2 attributes (pick something real — e.g. a BankAccount or a Student class)",
+            "Add basic error handling (try/except) to one method",
+            "git push the class file to hello-world",
+        ],
+        "resources": [
+            "Corey Schafer — Python OOP, Classes & Instances (direct video): https://youtu.be/ZDa-Z5JzLYM",
+        ],
+    },
+    {
+        "title": "Build Project #1 — A Real CLI Tool",
+        "tasks": [
+            "Read the Python argparse tutorial below (just enough to build one command)",
+            "Build a small CLI tool that does ONE real thing (e.g. a word counter, a simple to-do list, a unit converter)",
+            "Write a short README.md explaining what it does and how to run it",
+            "git push the whole project as a new folder in hello-world",
+        ],
+        "resources": [
+            "Python argparse — official tutorial (direct): https://docs.python.org/3/howto/argparse.html",
+        ],
+    },
 ]
 
-SUNDAY_BLOCK = [
-    "Block 1 (4 hrs): Real-world projects & systems architecture",
-    "Block 2 (3 hrs): Open-source PRs & hackathon builds",
-    "Block 3 (3 hrs): Networking, cold outreach, weekly self-audit",
-]
-
-SUNDAY_REVIEW_CHECKLIST = [
-    "What exact phase/sub-topic was I focused on this week?",
-    "Did I stick to ONE primary resource (no tutorial hell)?",
-    "Was at least 50% of my time spent writing/debugging code?",
-    "What did I push to my public GitHub this week?",
-    "How many LeetCode/DSA problems did I solve independently?",
-    "Did I contact 5+ engineering leads or submit open-source PRs?",
-]
-
-# Generic ongoing resources — shown on weekday/Sunday messages (post-sprint)
+# Generic fallback resources if you ever finish the whole queue above
 GENERAL_RESOURCES = [
     "LeetCode (DSA practice): https://leetcode.com/",
     "freeCodeCamp: https://www.freecodecamp.org/",
-    "Awesome lists (curated free resources, any topic): https://github.com/sindresorhus/awesome",
 ]
 
-# ---------------------------------------------------------------
-# 3) CORE OPERATING RULES (shown occasionally as reinforcement)
-# ---------------------------------------------------------------
 CORE_RULES = [
     "Proof-of-Work Above Pedigree — public GitHub proof beats grades alone",
     "The 50/50 Rule — max 50% consuming content, min 50% writing/debugging code",

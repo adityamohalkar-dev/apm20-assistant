@@ -1,20 +1,22 @@
 """
 notify.py
 =========
-APM20 Personal Assistant — notification engine.
+APM20 Personal Assistant — v2, rolling task-queue engine.
 
-Reads today's plan from roadmap.py and pushes it out over whichever
-channels have credentials set (Telegram / Email / WhatsApp).
-Missing credentials = that channel is silently skipped, others still run.
+ONE message per day. No morning/evening split anymore — cron-job.org fires
+this once, at 7:00 AM IST.
 
-Runs for free on a schedule via GitHub Actions (see .github/workflows/notify.yml).
+Task completion is 100% automatic: if a real commit landed in SKILL_REPO
+since the current task set was first shown, the task set is marked done
+and the NEXT one is shown tomorrow. If not, the SAME task set repeats,
+with a note on how many days it's been pending.
+
 All secrets are read from environment variables — NEVER hardcode credentials here.
 """
 
 import os
 import smtplib
-import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from zoneinfo import ZoneInfo
 
@@ -32,112 +34,168 @@ GITHUB_USERNAME = "adityamohalkar-dev"
 
 
 # ---------------------------------------------------------------
-# 1) BUILD TODAY'S MESSAGE
+# 1) TASK-QUEUE LOGIC
 # ---------------------------------------------------------------
-def build_message(mode: str) -> tuple:
-    """Returns (message_text, context_dict). context_dict is used by groq_brain
-    for the evening AI review — it only ever contains real, verified data."""
+def advance_or_repeat_task(token: str) -> dict:
+    """
+    Checks whether the current task set is complete (a real push landed in
+    SKILL_REPO since it was first shown). Updates state accordingly.
+
+    Returns:
+      {
+        "task": dict,              # the task set to show today (current or next)
+        "task_index": int,
+        "just_completed": bool,    # True if yesterday's task set was just finished
+        "repeat_count": int,       # how many days this task set has now shown
+        "commit_check_ok": bool,
+        "commit_check_error": str or None,
+        "queue_finished": bool,    # True if you've cleared the whole queue
+      }
+    """
+    state = state_store.load_state()
+    now = datetime.now(IST)
+    today_str = now.strftime("%Y-%m-%d")
+
+    idx = state.get("current_task_index", 0)
+    started_at = state.get("task_started_at")
+
+    result = {
+        "task": None,
+        "task_index": idx,
+        "just_completed": False,
+        "repeat_count": state.get("task_repeat_count", 0),
+        "commit_check_ok": False,
+        "commit_check_error": None,
+        "queue_finished": False,
+    }
+
+    if idx >= len(roadmap.TASK_QUEUE):
+        result["queue_finished"] = True
+        return result
+
+    # First time ever showing a task — initialize started_at, don't check anything yet
+    if started_at is None:
+        state["task_started_at"] = today_str
+        state["task_repeat_count"] = 1
+        state_store.save_state(state)
+        result["task"] = roadmap.TASK_QUEUE[idx]
+        result["repeat_count"] = 1
+        return result
+
+    # Don't re-check if we already evaluated today (avoid double-advance on re-runs)
+    if started_at == today_str:
+        result["task"] = roadmap.TASK_QUEUE[idx]
+        result["commit_check_ok"] = True
+        return result
+
+    since_dt = datetime.strptime(started_at, "%Y-%m-%d").replace(tzinfo=IST)
+    check = github_tracker.get_repo_commits_since(GITHUB_USERNAME, roadmap.SKILL_REPO, token, since_dt)
+    result["commit_check_ok"] = check["ok"]
+    result["commit_check_error"] = check["error"]
+
+    if check["ok"] and check["commit_count"] > 0:
+        # Task set complete — advance to the next one
+        idx += 1
+        state["current_task_index"] = idx
+        state["task_started_at"] = today_str
+        state["task_repeat_count"] = 1
+        result["just_completed"] = True
+        if idx >= len(roadmap.TASK_QUEUE):
+            result["queue_finished"] = True
+            state_store.save_state(state)
+            return result
+        result["task"] = roadmap.TASK_QUEUE[idx]
+        result["repeat_count"] = 1
+    else:
+        # Not complete — repeat the same task set
+        state["task_repeat_count"] = state.get("task_repeat_count", 0) + 1
+        result["task"] = roadmap.TASK_QUEUE[idx]
+        result["repeat_count"] = state["task_repeat_count"]
+
+    state_store.save_state(state)
+    return result
+
+
+# ---------------------------------------------------------------
+# 2) BUILD TODAY'S MESSAGE
+# ---------------------------------------------------------------
+def build_message() -> tuple:
+    """Returns (message_text, context_dict) — context feeds the AI review."""
     now = datetime.now(IST)
     today_str = now.strftime("%Y-%m-%d")
     weekday = now.strftime("%A")
 
-    lines = [f"APM20 // {weekday}, {now.strftime('%d %b %Y')} // {mode.upper()}", ""]
+    lines = [f"APM20 // {weekday}, {now.strftime('%d %b %Y')}", ""]
     context = {
-        "commits_today": 0,
-        "repos": [],
-        "coding_time": "0 mins",
-        "streak": 0,
-        "best_streak": 0,
-        "sprint_focus": None,
+        "commits_today": 0, "repos": [], "coding_time": "0 mins",
+        "streak": 0, "best_streak": 0, "sprint_focus": None,
         "activity_log_today": [],
     }
 
-    # --- REAL proof-of-work check (not self-reported) ---
     token = os.environ.get("GITHUB_PAT")
-    activity = github_tracker.get_today_activity(GITHUB_USERNAME, token)
-    state = None
-    if mode == "evening":
-        state = github_tracker.update_streak(activity["ok"] and activity["total_commits_today"] > 0)
 
+    # --- Task queue: advance or repeat ---
+    tq = advance_or_repeat_task(token)
+
+    if tq["queue_finished"]:
+        lines.append("You've cleared every task in the queue. Time to add more — edit roadmap.py.")
+        lines.append("")
+        for r in roadmap.GENERAL_RESOURCES:
+            lines.append(f"  - {r}")
+        return "\n".join(lines), context
+
+    task = tq["task"]
+    context["sprint_focus"] = task["title"]
+
+    if tq["just_completed"]:
+        lines.append(f"PREVIOUS TASK SET: COMPLETE — real push detected. Moving on.")
+        lines.append("")
+
+    header = f"TASK SET — {task['title']}"
+    if tq["repeat_count"] > 1:
+        header += f"  (day {tq['repeat_count']} — still pending, no push detected yet)"
+    lines.append(header)
+    lines.append("")
+    lines.append("Today's tasks (2-hour budget — this is the whole list, don't add more):")
+    for i, t in enumerate(task["tasks"], 1):
+        lines.append(f"  {i}. {t}")
+    lines.append("")
+    lines.append(f"Done = push to `{roadmap.SKILL_REPO}`. That's the only completion signal — nothing else to report.")
+
+    if task.get("resources"):
+        lines.append("")
+        lines.append("Resources:")
+        for r in task["resources"]:
+            lines.append(f"  - {r}")
+
+    if tq["commit_check_error"]:
+        lines.append("")
+        lines.append(f"[commit check failed: {tq['commit_check_error']}]")
+
+    # --- REAL proof-of-work stats (informational, not what drives completion) ---
+    activity = github_tracker.get_today_activity(GITHUB_USERNAME, token)
+    state_after = github_tracker.update_streak(activity["ok"] and activity["total_commits_today"] > 0)
     if activity["ok"]:
         context["commits_today"] = activity["total_commits_today"]
         context["repos"] = activity["repos_with_commits"]
-        if activity["total_commits_today"] > 0:
-            repos = ", ".join(activity["repos_with_commits"])
-            lines.append(
-                f"PROOF-OF-WORK (verified): {activity['total_commits_today']} commit(s) today in [{repos}]"
-            )
-        else:
-            lines.append("PROOF-OF-WORK (verified): 0 commits today so far")
-        if state:
-            lines.append(f"Streak: {state['current_streak']} day(s) (best: {state['longest_streak']})")
-            context["streak"] = state["current_streak"]
-            context["best_streak"] = state["longest_streak"]
+        context["streak"] = state_after["current_streak"]
+        context["best_streak"] = state_after["longest_streak"]
         lines.append("")
-    elif token:
-        lines.append(f"[proof-of-work check failed: {activity['error']}]")
-        lines.append("")
+        lines.append(
+            f"Stats: {activity['total_commits_today']} commit(s) today | "
+            f"Streak: {state_after['current_streak']}d (best {state_after['longest_streak']}d)"
+        )
 
-    # --- REAL coding time check (not self-reported) ---
+    # --- REAL coding time (WakaTime) ---
     waka_key = os.environ.get("WAKATIME_API_KEY")
     coding = wakatime_tracker.get_today_coding_time(waka_key)
     if coding["ok"]:
         context["coding_time"] = coding["human_readable"]
-        lines.append(f"CODING TIME (verified): {coding['human_readable']} today")
-        if coding["languages"]:
-            langs = ", ".join(f"{l['name']} ({l['text']})" for l in coding["languages"])
-            lines.append(f"  Top languages: {langs}")
-        lines.append("")
-    elif waka_key:
-        lines.append(f"[coding time check failed: {coding['error']}]")
-        lines.append("")
-
-    sprint_day = roadmap.SPRINT_8DAY.get(today_str)
-
-    if sprint_day:
-        context["sprint_focus"] = sprint_day["focus"]
-        lines.append(f"SPRINT DAY — {sprint_day['focus']}")
-        lines.append("Tasks:")
-        for t in sprint_day["tasks"]:
-            lines.append(f"  - {t}")
-        lines.append(f"Deliverable: {sprint_day['deliverable']}")
-        if sprint_day.get("resources"):
-            lines.append("")
-            lines.append("Resources:")
-            for r in sprint_day["resources"]:
-                lines.append(f"  - {r}")
-    elif weekday == "Sunday":
-        context["sprint_focus"] = "Sunday Deep Work Sprint"
-        lines.append("SUNDAY DEEP WORK SPRINT (10-12 hrs)")
-        for b in roadmap.SUNDAY_BLOCK:
-            lines.append(f"  - {b}")
-        if mode == "evening":
-            lines.append("")
-            lines.append("SUNDAY SELF-AUDIT — answer honestly:")
-            for i, q in enumerate(roadmap.SUNDAY_REVIEW_CHECKLIST, 1):
-                lines.append(f"  {i}. {q}")
-        lines.append("")
-        lines.append("Resources:")
-        for r in roadmap.GENERAL_RESOURCES:
-            lines.append(f"  - {r}")
-    else:
-        context["sprint_focus"] = "Weekday Operating Block"
-        lines.append("WEEKDAY OPERATING BLOCK (5:30-9:30 PM)")
-        for b in roadmap.WEEKDAY_BLOCK:
-            lines.append(f"  - {b}")
-        lines.append("")
-        lines.append("Resources:")
-        for r in roadmap.GENERAL_RESOURCES:
-            lines.append(f"  - {r}")
-
-    if mode == "evening" and weekday != "Sunday":
-        lines.append("")
-        lines.append("Before you close the laptop: did you commit/push something today?")
+        lines.append(f"Coding time so far: {coding['human_readable']}")
 
     lines.append("")
     lines.append(f"Rule reminder: {roadmap.CORE_RULES[now.day % len(roadmap.CORE_RULES)]}")
 
-    # Pull today's self-logged activity (from /done, /skip, /log) for the AI review
     full_state = state_store.load_state()
     context["activity_log_today"] = [
         e for e in full_state.get("activity_log", []) if e.get("date") == today_str
@@ -147,7 +205,7 @@ def build_message(mode: str) -> tuple:
 
 
 # ---------------------------------------------------------------
-# 2) CHANNELS — each is independent, each fails silently on its own
+# 3) CHANNELS — each is independent, each fails silently on its own
 # ---------------------------------------------------------------
 def send_telegram(message: str) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -173,7 +231,7 @@ def send_email(message: str) -> None:
         return
     try:
         msg = MIMEText(message)
-        msg["Subject"] = "APM20 Assistant — Today's Plan"
+        msg["Subject"] = "APM20 Assistant — Today's Tasks"
         msg["From"] = sender
         msg["To"] = recipient
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
@@ -185,12 +243,6 @@ def send_email(message: str) -> None:
 
 
 def send_whatsapp(message: str) -> None:
-    """
-    Uses CallMeBot's free personal-use API (not official WhatsApp Business API).
-    Setup: message +34 644 59 71 65 on WhatsApp with 'I allow callmebot to send me messages'
-    to get your apikey, then set CALLMEBOT_PHONE and CALLMEBOT_APIKEY as secrets.
-    Free-tier limits apply and delivery isn't as reliable as Telegram/Email.
-    """
     phone = os.environ.get("CALLMEBOT_PHONE")
     apikey = os.environ.get("CALLMEBOT_APIKEY")
     if not phone or not apikey:
@@ -198,11 +250,7 @@ def send_whatsapp(message: str) -> None:
         return
     url = "https://api.callmebot.com/whatsapp.php"
     try:
-        r = requests.get(
-            url,
-            params={"phone": phone, "text": message, "apikey": apikey},
-            timeout=15,
-        )
+        r = requests.get(url, params={"phone": phone, "text": message, "apikey": apikey}, timeout=15)
         r.raise_for_status()
         print("[whatsapp] sent")
     except Exception as e:
@@ -210,12 +258,10 @@ def send_whatsapp(message: str) -> None:
 
 
 # ---------------------------------------------------------------
-# 3) ENTRYPOINT
+# 4) ENTRYPOINT
 # ---------------------------------------------------------------
 def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "morning"  # "morning" or "evening"
-
-    # --- Check for /done, /skip, /log commands sent since last run ---
+    # --- Check for /skip, /log commands sent since last run (no /done needed anymore) ---
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     inbox = telegram_inbox.process_new_messages(token)
     if inbox["ok"] and inbox["processed"]:
@@ -225,16 +271,14 @@ def main():
     elif inbox["error"]:
         print(f"[inbox] check failed: {inbox['error']}")
 
-    message, context = build_message(mode)
+    message, context = build_message()
 
-    if mode == "evening":
-        review = groq_brain.generate_reflection(context)
-        if review["ok"]:
-            message += f"\n\nAI REVIEW:\n{review['text']}"
-            print(f"[ai review] generated")
-        elif review["error"] and os.environ.get("GROQ_API_KEY"):
-            print(f"[ai review] FAILED: {review['error']}")
-        # if GROQ_API_KEY simply isn't set, stay silent — same pattern as every other channel
+    review = groq_brain.generate_reflection(context)
+    if review["ok"]:
+        message += f"\n\nAI REVIEW:\n{review['text']}"
+        print("[ai review] generated")
+    elif review["error"] and os.environ.get("GROQ_API_KEY"):
+        print(f"[ai review] FAILED: {review['error']}")
 
     print(message)
     print("-" * 40)

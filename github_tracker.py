@@ -39,6 +39,45 @@ def _save_state(state: dict) -> None:
     state_store.save_state(state)
 
 
+def get_repo_commits_since(username: str, repo_name: str, token: str, since_dt) -> dict:
+    """
+    Checks ONE specific repo for commits by `username` since `since_dt`
+    (a timezone-aware datetime). Used to auto-detect task-set completion —
+    the task is done when a real push lands in SKILL_REPO after the task
+    was first shown.
+
+    Returns: {"ok": bool, "commit_count": int, "messages": [str, ...], "error": str or None}
+    """
+    result = {"ok": False, "commit_count": 0, "messages": [], "error": None}
+
+    if not token:
+        result["error"] = "GITHUB_PAT not set"
+        return result
+
+    since_iso = since_dt.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        r = requests.get(
+            f"{API_BASE}/repos/{username}/{repo_name}/commits",
+            headers=_headers(token),
+            params={"author": username, "since": since_iso, "per_page": 100},
+            timeout=20,
+        )
+        if r.status_code == 409:
+            # empty repo, nothing to compare against
+            result["ok"] = True
+            return result
+        r.raise_for_status()
+        commits = r.json()
+        result["commit_count"] = len(commits)
+        result["messages"] = [c["commit"]["message"].splitlines()[0] for c in commits]
+        result["ok"] = True
+        return result
+    except Exception as e:
+        result["error"] = str(e)
+        return result
+
+
 def get_today_activity(username: str, token: str) -> dict:
     """
     Returns:
@@ -103,7 +142,7 @@ def get_today_activity(username: str, token: str) -> dict:
 
 def update_streak(had_commits_today: bool) -> dict:
     """
-    Call this ONCE per day (evening run only) to update the streak state.
+    Call this ONCE per day (the single 7 AM run) to update the streak state.
     Returns the updated state dict.
     """
     state = _load_state()
