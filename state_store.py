@@ -21,6 +21,8 @@ DEFAULTS = {
     "current_task_index": 0,       # pointer into roadmap.TASK_QUEUE
     "task_started_at": None,       # ISO date the current task set was first shown
     "task_repeat_count": 0,        # how many days in a row this same task set has repeated
+    "daily_snapshots": [],         # one entry per day the assistant ran: real commits/coding-time/streak/task
+    "roadmap_snapshot": {},        # {"total_tasks": int, "titles": [str, ...]} — mirrors roadmap.TASK_QUEUE for the dashboard
 }
 
 

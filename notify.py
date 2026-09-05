@@ -201,6 +201,28 @@ def build_message() -> tuple:
         e for e in full_state.get("activity_log", []) if e.get("date") == today_str
     ]
 
+    # --- Daily snapshot: one real record per day for the dashboard's history/charts ---
+    snapshots = full_state.get("daily_snapshots", [])
+    snapshots = [s for s in snapshots if s.get("date") != today_str]  # avoid dupes on re-runs
+    snapshots.append({
+        "date": today_str,
+        "commits_today": context["commits_today"],
+        "repos": context["repos"],
+        "coding_time": context["coding_time"],
+        "streak": context["streak"],
+        "task_title": task["title"],
+        "task_index": tq["task_index"],
+        "repeat_count": tq["repeat_count"],
+    })
+    full_state["daily_snapshots"] = snapshots[-90:]  # keep ~3 months
+
+    # --- Roadmap snapshot: mirrors roadmap.TASK_QUEUE so the dashboard can show progress ---
+    full_state["roadmap_snapshot"] = {
+        "total_tasks": len(roadmap.TASK_QUEUE),
+        "titles": [t["title"] for t in roadmap.TASK_QUEUE],
+    }
+    state_store.save_state(full_state)
+
     return "\n".join(lines), context
 
 
