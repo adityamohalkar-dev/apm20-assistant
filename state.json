@@ -10,5 +10,8 @@
       "type": "done",
       "detail": ""
     }
-  ]
+  ],
+  "current_task_index": 0,
+  "task_started_at": "2026-09-05",
+  "task_repeat_count": 1
 }
