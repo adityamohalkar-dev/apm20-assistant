@@ -13,6 +13,8 @@
     --muted: #888;
     --accent: #9fff9f;
     --accent-dim: #4d8f4d;
+    --blue: #9fcfff;
+    --red: #ff9f9f;
   }
   * { box-sizing: border-box; }
   body {
@@ -22,95 +24,75 @@
     font-family: 'Courier New', Courier, monospace;
     padding: 24px 16px 60px 16px;
   }
-  .wrap { max-width: 780px; margin: 0 auto; }
+  .wrap { max-width: 860px; margin: 0 auto; }
 
   header { margin-bottom: 28px; }
-  header h1 {
-    font-size: 22px;
-    margin: 0 0 4px 0;
-    letter-spacing: 0.5px;
-  }
-  header p {
-    color: var(--muted);
-    margin: 0;
-    font-size: 13px;
-  }
+  header h1 { font-size: 22px; margin: 0 0 4px 0; letter-spacing: 0.5px; }
+  header p { color: var(--muted); margin: 0; font-size: 13px; }
   header a { color: var(--accent); text-decoration: none; }
   header a:hover { text-decoration: underline; }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
   }
-  .card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-  }
-  .card .label {
-    color: var(--muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-  }
-  .card .value {
-    font-size: 28px;
-    font-weight: bold;
-    color: var(--accent);
-  }
-  .card .sub {
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: 4px;
-  }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+  .card .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .card .value { font-size: 26px; font-weight: bold; color: var(--accent); }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
 
   .section-title {
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    margin: 28px 0 10px 0;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+    margin: 28px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: baseline;
   }
+  .section-title span.tag { color: var(--accent-dim); text-transform: none; letter-spacing: 0; font-size: 11px; }
+
+  /* Contribution calendar */
+  .cal-wrap { overflow-x: auto; padding-bottom: 4px; }
+  .cal-grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); gap: 3px; width: max-content; }
+  .cal-cell { width: 13px; height: 13px; border-radius: 2px; background: #1c1c1c; border: 1px solid #232323; }
+  .cal-cell[data-level="1"] { background: #1f3d1f; }
+  .cal-cell[data-level="2"] { background: #2d5c2d; }
+  .cal-cell[data-level="3"] { background: #4d8f4d; }
+  .cal-cell[data-level="4"] { background: var(--accent); }
+  .cal-legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; color: var(--muted); font-size: 11px; }
+
+  /* Coding time bars */
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 90px; margin-top: 6px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar { width: 100%; max-width: 22px; background: var(--accent-dim); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .bar-label { color: var(--muted); font-size: 9px; margin-top: 4px; writing-mode: vertical-rl; transform: rotate(180deg); height: 34px; }
+
+  /* Roadmap */
+  .roadmap-item {
+    display: flex; align-items: baseline; gap: 10px; padding: 8px 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; font-size: 13px;
+  }
+  .roadmap-item .idx { color: var(--muted); font-size: 11px; min-width: 18px; }
+  .roadmap-item.done { color: var(--muted); text-decoration: line-through; }
+  .roadmap-item.current { border-left: 3px solid var(--accent); color: var(--text); }
+  .roadmap-item .pill { margin-left: auto; font-size: 10px; color: var(--bg); background: var(--accent); padding: 2px 6px; border-radius: 10px; }
+
+  .commit-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .commit-row:last-child { border-bottom: none; }
+  .commit-row .sha { color: var(--blue); }
+  .commit-row .msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .commit-row .when { color: var(--muted); font-size: 11px; white-space: nowrap; }
 
   .log-entry {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent-dim);
-    border-radius: 4px;
-    padding: 10px 14px;
-    margin-bottom: 8px;
-    font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent-dim);
+    border-radius: 4px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px;
   }
-  .log-entry .meta {
-    color: var(--muted);
-    font-size: 11px;
-    margin-bottom: 3px;
-  }
+  .log-entry .meta { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
   .log-entry.done { border-left-color: var(--accent); }
-  .log-entry.skip { border-left-color: #ff9f9f; }
-  .log-entry.note { border-left-color: #9fcfff; }
+  .log-entry.skip { border-left-color: var(--red); }
+  .log-entry.note { border-left-color: var(--blue); }
 
-  .empty {
-    color: var(--muted);
-    font-size: 13px;
-    font-style: italic;
-    padding: 20px 0;
-    text-align: center;
-  }
-
-  footer {
-    margin-top: 40px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 11px;
-  }
-
+  .empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 20px 0; text-align: center; }
+  footer { margin-top: 40px; text-align: center; color: var(--muted); font-size: 11px; }
   .loading { color: var(--muted); padding: 40px 0; text-align: center; }
 </style>
 </head>
@@ -123,20 +105,159 @@
 
   <div id="content" class="loading">Loading live data…</div>
 
-  <footer>Auto-generated from state.json — updates whenever the assistant runs.</footer>
+  <footer>Auto-generated from state.json + live GitHub commits — updates whenever the assistant runs.</footer>
 </div>
 
 <script>
-const STATE_URL = "https://raw.githubusercontent.com/adityamohalkar-dev/apm20-assistant/main/state.json";
+const OWNER = "adityamohalkar-dev";
+const SKILL_REPO = "hello-world";
+const STATE_URL = `https://raw.githubusercontent.com/${OWNER}/apm20-assistant/main/state.json?_=${Date.now()}`;
 
 function escapeHtml(str) {
   const div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
 }
 
+function timeAgo(iso) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// "1 hr 24 mins" / "45 mins" / "3 hrs" / "0 secs" -> minutes
+function parseCodingTimeToMinutes(text) {
+  if (!text) return 0;
+  let mins = 0;
+  const h = text.match(/(\d+)\s*hr/);
+  const m = text.match(/(\d+)\s*min/);
+  if (h) mins += parseInt(h[1], 10) * 60;
+  if (m) mins += parseInt(m[1], 10);
+  return mins;
+}
+
+function renderStatCards(state) {
+  const streak = state.current_streak ?? 0;
+  const best = state.longest_streak ?? 0;
+  const lastDate = state.last_commit_date || "never";
+  const snaps = state.daily_snapshots || [];
+  const todaySnap = snaps.length ? snaps[snaps.length - 1] : null;
+
+  return `
+    <div class="grid">
+      <div class="card">
+        <div class="label">Current Streak</div>
+        <div class="value">${streak}</div>
+        <div class="sub">day${streak === 1 ? '' : 's'}</div>
+      </div>
+      <div class="card">
+        <div class="label">Best Streak</div>
+        <div class="value">${best}</div>
+        <div class="sub">day${best === 1 ? '' : 's'}</div>
+      </div>
+      <div class="card">
+        <div class="label">Last Commit</div>
+        <div class="value" style="font-size:16px;">${escapeHtml(lastDate)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Coding Time (latest run)</div>
+        <div class="value" style="font-size:16px;">${escapeHtml(todaySnap ? todaySnap.coding_time : '—')}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCalendar(snaps) {
+  const byDate = {};
+  snaps.forEach(s => { byDate[s.date] = s; });
+
+  const days = [];
+  const today = new Date();
+  const WEEKS = 12;
+  for (let i = WEEKS * 7 - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const snap = byDate[key];
+    let level = 0;
+    if (snap) {
+      const c = snap.commits_today || 0;
+      level = c === 0 ? 0 : c === 1 ? 1 : c <= 3 ? 2 : c <= 6 ? 3 : 4;
+    }
+    days.push({ key, level });
+  }
+
+  const cells = days.map(d =>
+    `<div class="cal-cell" data-level="${d.level}" title="${d.key}: ${d.level === 0 ? 'no commits' : 'level ' + d.level}"></div>`
+  ).join("");
+
+  return `
+    <div class="cal-wrap"><div class="cal-grid">${cells}</div></div>
+    <div class="cal-legend">
+      Less
+      <div class="cal-cell" data-level="0"></div>
+      <div class="cal-cell" data-level="1"></div>
+      <div class="cal-cell" data-level="2"></div>
+      <div class="cal-cell" data-level="3"></div>
+      <div class="cal-cell" data-level="4"></div>
+      More
+    </div>
+  `;
+}
+
+function renderCodingBars(snaps) {
+  const recent = snaps.slice(-14);
+  if (recent.length === 0) return `<div class="empty">No runs recorded yet.</div>`;
+  const minutes = recent.map(s => parseCodingTimeToMinutes(s.coding_time));
+  const max = Math.max(1, ...minutes);
+  const cols = recent.map((s, i) => {
+    const h = Math.max(2, Math.round((minutes[i] / max) * 84));
+    const label = s.date.slice(5); // MM-DD
+    return `
+      <div class="bar-col">
+        <div class="bar" style="height:${h}px" title="${s.date}: ${escapeHtml(s.coding_time)}"></div>
+        <div class="bar-label">${label}</div>
+      </div>
+    `;
+  }).join("");
+  return `<div class="bars">${cols}</div>`;
+}
+
+function renderRoadmap(state) {
+  const rm = state.roadmap_snapshot || {};
+  const titles = rm.titles || [];
+  if (titles.length === 0) return `<div class="empty">No roadmap data yet — renders once the assistant fires.</div>`;
+
+  const currentIdx = state.current_task_index ?? 0;
+  const repeatCount = state.task_repeat_count ?? 0;
+
+  return titles.map((title, i) => {
+    let cls = "roadmap-item";
+    let pill = "";
+    if (i < currentIdx) {
+      cls += " done";
+      pill = `<span class="pill" style="background:var(--accent-dim);">done</span>`;
+    } else if (i === currentIdx) {
+      cls += " current";
+      pill = repeatCount > 1
+        ? `<span class="pill" style="background:var(--red); color:#000;">day ${repeatCount} pending</span>`
+        : `<span class="pill">in progress</span>`;
+    }
+    return `
+      <div class="${cls}">
+        <span class="idx">${i + 1}.</span>
+        <span>${escapeHtml(title)}</span>
+        ${pill}
+      </div>
+    `;
+  }).join("");
+}
+
 function renderLogEntry(entry) {
-  const typeLabel = { done: "DONE", skip: "SKIPPED", note: "NOTE" }[entry.type] || entry.type.toUpperCase();
+  const typeLabel = { done: "DONE", skip: "SKIPPED", note: "NOTE" }[entry.type] || String(entry.type).toUpperCase();
   return `
     <div class="log-entry ${escapeHtml(entry.type)}">
       <div class="meta">${escapeHtml(entry.date)} ${escapeHtml(entry.time || '')} — ${typeLabel}</div>
@@ -145,50 +266,74 @@ function renderLogEntry(entry) {
   `;
 }
 
-fetch(STATE_URL, { cache: "no-store" })
-  .then(res => {
-    if (!res.ok) throw new Error("state.json not found (HTTP " + res.status + ")");
-    return res.json();
-  })
-  .then(state => {
-    const streak = state.current_streak ?? 0;
-    const best = state.longest_streak ?? 0;
-    const lastDate = state.last_commit_date || "never";
-    const log = (state.activity_log || []).slice().reverse();
-
-    let html = `
-      <div class="grid">
-        <div class="card">
-          <div class="label">Current Streak</div>
-          <div class="value">${streak}</div>
-          <div class="sub">day${streak === 1 ? '' : 's'}</div>
-        </div>
-        <div class="card">
-          <div class="label">Best Streak</div>
-          <div class="value">${best}</div>
-          <div class="sub">day${best === 1 ? '' : 's'}</div>
-        </div>
-        <div class="card">
-          <div class="label">Last Commit</div>
-          <div class="value" style="font-size:16px;">${escapeHtml(lastDate)}</div>
-        </div>
-      </div>
-
-      <div class="section-title">Recent Activity Log</div>
-    `;
-
-    if (log.length === 0) {
-      html += `<div class="empty">No logged activity yet — send /done, /skip, or /log to the bot to start building this.</div>`;
-    } else {
-      html += log.slice(0, 20).map(renderLogEntry).join("");
+async function fetchRecentCommits() {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${OWNER}/${SKILL_REPO}/commits?per_page=8`, {
+      headers: { Accept: "application/vnd.github+json" }
+    });
+    if (!r.ok) throw new Error(`GitHub API HTTP ${r.status}`);
+    const commits = await r.json();
+    if (!Array.isArray(commits) || commits.length === 0) {
+      return `<div class="empty">No commits in ${escapeHtml(SKILL_REPO)} yet.</div>`;
     }
+    return commits.map(c => {
+      const msg = (c.commit && c.commit.message ? c.commit.message.split("\n")[0] : "(no message)");
+      const sha = c.sha ? c.sha.slice(0, 7) : "???????";
+      const url = c.html_url || "#";
+      const when = c.commit && c.commit.author ? timeAgo(c.commit.author.date) : "";
+      return `
+        <div class="commit-row">
+          <span class="sha">${escapeHtml(sha)}</span>
+          <span class="msg" title="${escapeHtml(msg)}">${escapeHtml(msg)}</span>
+          <span class="when">${escapeHtml(when)}</span>
+        </div>
+      `;
+    }).join("") + `<div style="margin-top:8px;"><a href="https://github.com/${OWNER}/${SKILL_REPO}/commits" target="_blank" style="color:var(--accent); font-size:11px;">View all commits →</a></div>`;
+  } catch (err) {
+    return `<div class="empty">Couldn't load commits: ${escapeHtml(err.message)} (GitHub API is rate-limited when unauthenticated — refresh later if this fails often)</div>`;
+  }
+}
 
-    document.getElementById("content").innerHTML = html;
-  })
-  .catch(err => {
-    document.getElementById("content").innerHTML =
-      `<div class="empty">Couldn't load live data: ${escapeHtml(err.message)}<br>(Make sure the repo is public and state.json exists on the main branch.)</div>`;
-  });
+async function render() {
+  const el = document.getElementById("content");
+  let state;
+  try {
+    const res = await fetch(STATE_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("state.json not found (HTTP " + res.status + ")");
+    state = await res.json();
+  } catch (err) {
+    el.innerHTML = `<div class="empty">Couldn't load live data: ${escapeHtml(err.message)}<br>(Make sure the repo is public and state.json exists on the main branch.)</div>`;
+    return;
+  }
+
+  const snaps = state.daily_snapshots || [];
+  const log = (state.activity_log || []).slice().reverse();
+
+  let html = renderStatCards(state);
+
+  html += `<div class="section-title">Commit Activity <span class="tag">last 12 weeks</span></div>`;
+  html += renderCalendar(snaps);
+
+  html += `<div class="section-title">Coding Time <span class="tag">last 14 runs, WakaTime</span></div>`;
+  html += renderCodingBars(snaps);
+
+  html += `<div class="section-title">Roadmap Progress <span class="tag">${(state.current_task_index ?? 0)} / ${(state.roadmap_snapshot && state.roadmap_snapshot.total_tasks) || '?'} complete</span></div>`;
+  html += renderRoadmap(state);
+
+  html += `<div class="section-title">Recent Commits <span class="tag">${escapeHtml(SKILL_REPO)}, live from GitHub</span></div>`;
+  html += `<div id="commits-slot" class="empty">Loading commits…</div>`;
+
+  html += `<div class="section-title">Recent Activity Log <span class="tag">/done · /skip · /log via Telegram</span></div>`;
+  html += log.length === 0
+    ? `<div class="empty">No logged activity yet — send /done, /skip, or /log to the bot to start building this.</div>`
+    : log.slice(0, 20).map(renderLogEntry).join("");
+
+  el.innerHTML = html;
+
+  document.getElementById("commits-slot").outerHTML = `<div id="commits-slot">${await fetchRecentCommits()}</div>`;
+}
+
+render();
 </script>
 </body>
 </html>
