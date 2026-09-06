@@ -13,5 +13,27 @@
   ],
   "current_task_index": 0,
   "task_started_at": "2026-09-05",
-  "task_repeat_count": 1
+  "task_repeat_count": 2,
+  "daily_snapshots": [
+    {
+      "date": "2026-09-06",
+      "commits_today": 0,
+      "repos": [],
+      "coding_time": "0 secs",
+      "streak": 0,
+      "task_title": "Windows Terminal Basics (CMD + PowerShell)",
+      "task_index": 0,
+      "repeat_count": 2
+    }
+  ],
+  "roadmap_snapshot": {
+    "total_tasks": 5,
+    "titles": [
+      "Windows Terminal Basics (CMD + PowerShell)",
+      "Python Fundamentals \u2014 Variables & Control Flow",
+      "Functions, Modules & File I/O",
+      "Object-Oriented Python (OOP)",
+      "Build Project #1 \u2014 A Real CLI Tool"
+    ]
+  }
 }
