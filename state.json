@@ -12,8 +12,8 @@
     }
   ],
   "current_task_index": 0,
-  "task_started_at": "2026-09-05",
-  "task_repeat_count": 2,
+  "task_started_at": null,
+  "task_repeat_count": 0,
   "daily_snapshots": [
     {
       "date": "2026-09-06",
@@ -24,6 +24,36 @@
       "task_title": "Windows Terminal Basics (CMD + PowerShell)",
       "task_index": 0,
       "repeat_count": 2
+    },
+    {
+      "date": "2026-09-07",
+      "commits_today": 0,
+      "repos": [],
+      "coding_time": "0 secs",
+      "streak": 0,
+      "task_title": "Windows Terminal Basics (CMD + PowerShell)",
+      "task_index": 0,
+      "repeat_count": 3
+    },
+    {
+      "date": "2026-09-08",
+      "commits_today": 0,
+      "repos": [],
+      "coding_time": "0 secs",
+      "streak": 0,
+      "task_title": "Windows Terminal Basics (CMD + PowerShell)",
+      "task_index": 0,
+      "repeat_count": 4
+    },
+    {
+      "date": "2026-09-09",
+      "commits_today": 0,
+      "repos": [],
+      "coding_time": "0 secs",
+      "streak": 0,
+      "task_title": "Windows Terminal Basics (CMD + PowerShell)",
+      "task_index": 0,
+      "repeat_count": 5
     }
   ],
   "roadmap_snapshot": {
