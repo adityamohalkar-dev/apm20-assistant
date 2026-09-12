@@ -12,8 +12,8 @@
     }
   ],
   "current_task_index": 0,
-  "task_started_at": null,
-  "task_repeat_count": 0,
+  "task_started_at": "2026-09-12",
+  "task_repeat_count": 1,
   "daily_snapshots": [
     {
       "date": "2026-09-06",
@@ -54,16 +54,27 @@
       "task_title": "Windows Terminal Basics (CMD + PowerShell)",
       "task_index": 0,
       "repeat_count": 5
+    },
+    {
+      "date": "2026-09-12",
+      "commits_today": 0,
+      "repos": [],
+      "coding_time": "0 secs",
+      "streak": 0,
+      "task_title": "Day 1 \u2014 Terminal, Python & Your First Real Push",
+      "task_index": 0,
+      "repeat_count": 1
     }
   ],
   "roadmap_snapshot": {
-    "total_tasks": 5,
+    "total_tasks": 6,
     "titles": [
-      "Windows Terminal Basics (CMD + PowerShell)",
-      "Python Fundamentals \u2014 Variables & Control Flow",
-      "Functions, Modules & File I/O",
-      "Object-Oriented Python (OOP)",
-      "Build Project #1 \u2014 A Real CLI Tool"
+      "Day 1 \u2014 Terminal, Python & Your First Real Push",
+      "Python Syntax \u2014 Variables & Control Flow",
+      "Functions & File I/O \u2014 Building Blocks for CLI Tool #1",
+      "Proof-of-Work: CLI Tool #1 \u2014 File Automation in Python",
+      "Discrete Math Basics \u2014 Logic & Sets",
+      "10 LeetCode Easy (Python) \u2014 Month 1 DSA Target"
     ]
   }
 }
